@@ -7,14 +7,18 @@
 #include <time.h>
 #define PORT 8080 
 
-char* createProcess(int limiteIn, int limiteSup){
-    srand(time(0));
-    char* numStr;
-    numStr = malloc(sizeof(char)*50);
-    int num = (rand() % (limiteSup - limiteIn + 1)) + limiteIn; 
-    sprintf(numStr, "%i", num);
 
-    return numStr;
+//funciones para crear procesos
+int createBurst(int limiteIn, int limiteSup){
+    srand(time(0));
+    int burst = (rand() % (limiteSup - limiteIn + 1)) + limiteIn; //crear un numero aleatorio entre 2 limites
+    return burst;
+}
+
+int createPriority(){
+    int prioridad = (rand() % (5)) + 1;
+    return prioridad;
+
 }
 
 //Para compilar -> gcc cliente.c -o cliente
@@ -24,7 +28,19 @@ int main(int argc, char const *argv[])
     int sock = 0, valread; //para establecer el socket
     struct sockaddr_in serv_addr; 
     
-    char * msg;//mensaje que se le ve le va a enviar al servidor
+    //variables para leer el archivo:
+    FILE *f;
+    int c;
+    unsigned char symb;
+    char * fileToRead;
+
+    //variables para establecer el tipo de ejecucion, manual o automatica
+    char *exe;
+
+    //variables para el rango de valores del burst
+    int burstUpper, burstLower, tasa;
+
+    
     char buffer[1024] = {0}; 
     if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) 
     { 
@@ -47,19 +63,70 @@ int main(int argc, char const *argv[])
         printf("\nConnection Failed \n"); 
         return -1; 
     } 
-    char* randomN = createProcess(1,6);
+    
     while(1){
-        char* randomN = createProcess(1,6);
-        printf("Digite el mensaje: \n");
-        scanf("%s", msg);
-        if(!strcmp(msg,"fin")){//condicion de parada
+        
+        printf("Digite la forma de ejecucion: manual(m) o automatica(a) \n");
+        printf("\n");
+        scanf("%s", exe);
+        if(!strcmp(exe,"fin")){//condicion de parada
             break;
         }
-        send(sock , msg , strlen(msg) , 0 ); 
-        printf("Process sent\n"); 
-        valread = read( sock , buffer, 1024); 
-        printf("Process ID %s\n",buffer );
-        printf("Rand number %s\n",randomN ); 
+
+        if(!strcmp(exe,"m")){
+            send(sock , exe , strlen(exe) , 0 );
+            //printf("Digite el nombre del archivo a leer: \n");//no se si hacerlo de forma constante arriba
+            //scanf("%s",fileToRead);
+
+            
+            /*f=fopen(fileToRead,"rt");
+            while((c=fgetc(f))!=EOF){
+                //por aqui van los threads para enviar los datos pero igual
+                //hay que hacer un brete para que ver como mandamos los valores
+                symb= (unsigned char) c;  
+                if(symb >= '0' && symb <='9')
+                    printf("%c",symb);
+
+                //tambien iria un read(sock, pId, 1024); para recibir el pid e imprimirlo
+            }
+            fclose(f);*/
+            valread = read( sock , buffer, 1024); //snipet para recibir algo por el socket
+            printf("Process ID %s\n",buffer );
+            printf("\n");
+            printf("\n");
+            
+        }
+
+        if(!strcmp(exe,"a")){
+            send(sock , exe , strlen(exe) , 0 );
+            printf("Ingrese el minimo valor del rango del burst\n");
+            scanf("%d",&burstLower);
+            printf("Ingrese el maximo valor del rango del burst\n");
+            scanf("%d",&burstUpper);
+
+            printf("Ingrese la tasa de creacion\n"); //no se para que tho
+            scanf("%d",&tasa);
+
+            int burst = createBurst(burstLower,burstUpper);
+            int prior = createPriority();
+
+            //se manda...
+
+            printf("Burst %i\n",burst ); 
+            printf("Priority %i\n",prior );
+
+            //se recibe le pId
+            valread = read( sock , buffer, 1024); //snipet para recibir algo por el socket
+            printf("Process ID %s\n",buffer );
+            printf("\n");
+            printf("\n");
+            
+
+        }
+        //send(sock , msg , strlen(msg) , 0 ); snippet para mandar algo por el socket 
+        //valread = read( sock , buffer, 1024); //snipet para recibir algo por el socket
+        //printf("Process ID %s\n",buffer );
+         
     }
     return 0; 
 } 
