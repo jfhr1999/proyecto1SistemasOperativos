@@ -5,6 +5,7 @@
 #include <string.h> 
 #include <stdlib.h>
 #include <time.h>
+#include <pthreads.h>
 #define PORT 8080 
 
 
@@ -21,10 +22,49 @@ int createPriority(){
 
 }
 
+//Crea un thread, lo envia al server e imprime el pid que recibió como resultado
+void sendThread(int burst, int priority){
+    
+    //Nuevo thread
+    pthread_t newThread;
+    //Para guardar el pid que recibe el thread como resultado
+    int *pid_result;
+
+    
+    //Meto los valores en un array para enviarlos al thread
+    int[2] values;
+    values[0] = burst;
+    values[1] = priority;
+
+    pthread_create(&newThread, NULL, sendToServer, &values);
+
+    //Espera a que termine de correr el thread y recibe el resultado
+    pthread_join(newThread, (void*)&pid_result);
+    printf("Respuesta de servidor, pid: %d\n", *pid_result);
+}
+
+void* sendToServer(void * arg){
+    //Guardo los valores que recibo como parametro
+    int[2] *values = (int[2] *) arg;
+
+    //Hago espacio para el int que voy a recibir
+    int *resPid = (int *)malloc(sizeof(int));
+
+    //Enviar a servidor y recibir el numero del pid como respuesta
+
+    //Retorna con un valor temporal para las pruebas, piensen que es el int que recibi
+    *resPid = 2;
+    return resPid;
+
+}
+
 //Para compilar -> gcc cliente.c -o cliente
 //para ejecutar -> ./cliente   
 int main(int argc, char const *argv[]) 
 { 
+    //Bandera para ejecutar modo automatico
+    bool run_auto = false;
+
     int sock = 0, valread; //para establecer el socket
     struct sockaddr_in serv_addr; 
     
@@ -111,6 +151,19 @@ int main(int argc, char const *argv[])
             int prior = createPriority();
 
             //se manda...
+            run_auto = true;
+            while(run_auto){ //Como hago run_auto = false como usuario ?????????
+                sendThread(burst, prior);
+                
+                //Si quiere enviar mas de un thread por segundo, usa la tasa
+                //Si no, envia un thread por minuto
+                if(tasa > 0){
+                    sleep(60/tasa);
+                } else {
+                    sleep(60);
+                }
+            }
+            
 
             printf("Burst %i\n",burst ); 
             printf("Priority %i\n",prior );
