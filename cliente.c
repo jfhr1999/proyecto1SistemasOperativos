@@ -22,8 +22,13 @@ int createPriority(){
 
 }
 
+int createRandSleep(){
+    int sleep = (rand() % (8 - 3 + 1)) + 3;
+    return sleep; 
+}
+
 //Crea un thread, lo envia al server e imprime el pid que recibió como resultado
-void sendThread(int burst, int priority){
+void sendThread(char mode, int burst, int priority){
     
     //Nuevo thread
     pthread_t newThread;
@@ -32,9 +37,15 @@ void sendThread(int burst, int priority){
 
     
     //Meto los valores en un array para enviarlos al thread
-    int[2] values;
-    values[0] = burst;
-    values[1] = priority;
+    int[3] values;
+    //Si es modo manual el sleep es 2, si es auto es 0
+    if(strcmp(mode, "m") == 0){
+        values[0] = 2;
+    } else {
+        values[0] = 0;
+    }
+    values[1] = burst;
+    values[2] = priority;
 
     pthread_create(&newThread, NULL, sendToServer, &values);
 
@@ -45,12 +56,19 @@ void sendThread(int burst, int priority){
 
 void* sendToServer(void * arg){
     //Guardo los valores que recibo como parametro
-    int[2] *values = (int[2] *) arg;
+    int[3] *values = (int[3] *) arg;
+    int sleepNumber = values[0];
+    int burst = values[1];
+    int priority = values[2];
 
     //Hago espacio para el int que voy a recibir
     int *resPid = (int *)malloc(sizeof(int));
 
+    //Si es manual tiene un sleep antes de enviar la info, si es auto sleep es 0
+    sleep(sleepNumber);
+
     //Enviar a servidor y recibir el numero del pid como respuesta
+    //PENDING
 
     //Retorna con un valor temporal para las pruebas, piensen que es el int que recibi
     *resPid = 2;
@@ -130,6 +148,19 @@ int main(int argc, char const *argv[])
                 //tambien iria un read(sock, pId, 1024); para recibir el pid e imprimirlo
             }
             fclose(f);*/
+
+            /*
+            lineas = (array con cada linea del archivo???) o leer cada linea y hacer esto al leerla
+
+            //Entonces un for aqui{
+
+                sendThread("m", burst[i], prior[i]);
+                sleep(createRandSleep());
+            }
+            
+            */
+
+
             valread = read( sock , buffer, 1024); //snipet para recibir algo por el socket
             printf("Process ID %s\n",buffer );
             printf("\n");
@@ -153,7 +184,7 @@ int main(int argc, char const *argv[])
             //se manda...
             run_auto = true;
             while(run_auto){ //Como hago run_auto = false como usuario ?????????
-                sendThread(burst, prior);
+                sendThread("a", burst, prior); //a por modo automatico
                 
                 //Si quiere enviar mas de un thread por segundo, usa la tasa
                 //Si no, envia un thread por minuto
@@ -169,6 +200,7 @@ int main(int argc, char const *argv[])
             printf("Priority %i\n",prior );
 
             //se recibe le pId
+            //Necesito hacer esto en otra funcion, como hago??
             valread = read( sock , buffer, 1024); //snipet para recibir algo por el socket
             printf("Process ID %s\n",buffer );
             printf("\n");
