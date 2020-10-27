@@ -62,7 +62,7 @@ void sendThread(char mode, int burst, int priority){
     //Meto los valores en un array para enviarlos al thread
     int values[3];
     //Si es modo manual el sleep es 2, si es auto es 0
-    if(strcmp(mode, "m") == 0){
+    if(mode == 'm'){
         values[0] = 2;
     } else {
         values[0] = 0;
@@ -77,7 +77,7 @@ void sendThread(char mode, int burst, int priority){
     printf("Respuesta de servidor, pid: %d\n", *pid_result);
 }
 
-//Para compilar -> gcc cliente.c -o cliente
+//Para compilar -> gcc cliente.c -o cliente -lpthread
 //para ejecutar -> ./cliente   
 int main(int argc, char const *argv[]) 
 { 
@@ -185,7 +185,7 @@ int main(int argc, char const *argv[])
             //se manda...
             run_auto = true;
             while(run_auto){ //Como hago run_auto = false como usuario ?????????
-                sendThread("a", burst, prior); //a por modo automatico
+                sendThread('a', burst, prior); //a por modo automatico
                 
                 //Si quiere enviar mas de un thread por segundo, usa la tasa
                 //Si no, envia un thread por minuto
