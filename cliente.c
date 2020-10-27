@@ -5,7 +5,8 @@
 #include <string.h> 
 #include <stdlib.h>
 #include <time.h>
-#include <pthreads.h>
+#include <pthread.h>
+#include <stdbool.h>
 #define PORT 8080 
 
 
@@ -27,39 +28,12 @@ int createRandSleep(){
     return sleep; 
 }
 
-//Crea un thread, lo envia al server e imprime el pid que recibió como resultado
-void sendThread(char mode, int burst, int priority){
-    
-    //Nuevo thread
-    pthread_t newThread;
-    //Para guardar el pid que recibe el thread como resultado
-    int *pid_result;
-
-    
-    //Meto los valores en un array para enviarlos al thread
-    int[3] values;
-    //Si es modo manual el sleep es 2, si es auto es 0
-    if(strcmp(mode, "m") == 0){
-        values[0] = 2;
-    } else {
-        values[0] = 0;
-    }
-    values[1] = burst;
-    values[2] = priority;
-
-    pthread_create(&newThread, NULL, sendToServer, &values);
-
-    //Espera a que termine de correr el thread y recibe el resultado
-    pthread_join(newThread, (void*)&pid_result);
-    printf("Respuesta de servidor, pid: %d\n", *pid_result);
-}
-
 void* sendToServer(void * arg){
     //Guardo los valores que recibo como parametro
-    int[3] *values = (int[3] *) arg;
-    int sleepNumber = values[0];
-    int burst = values[1];
-    int priority = values[2];
+    int (*values)[3] = (int (*) [3]) arg;
+    int sleepNumber = *values[0];
+    int burst = *values[1];
+    int priority = *values[2];
 
     //Hago espacio para el int que voy a recibir
     int *resPid = (int *)malloc(sizeof(int));
@@ -74,6 +48,33 @@ void* sendToServer(void * arg){
     *resPid = 2;
     return resPid;
 
+}
+
+//Crea un thread, lo envia al server e imprime el pid que recibió como resultado
+void sendThread(char mode, int burst, int priority){
+    
+    //Nuevo thread
+    pthread_t newThread;
+    //Para guardar el pid que recibe el thread como resultado
+    int *pid_result;
+
+    
+    //Meto los valores en un array para enviarlos al thread
+    int values[3];
+    //Si es modo manual el sleep es 2, si es auto es 0
+    if(strcmp(mode, "m") == 0){
+        values[0] = 2;
+    } else {
+        values[0] = 0;
+    }
+    values[1] = burst;
+    values[2] = priority;
+
+    pthread_create(&newThread, NULL, sendToServer, &values);
+
+    //Espera a que termine de correr el thread y recibe el resultado
+    pthread_join(newThread, (void*)&pid_result);
+    printf("Respuesta de servidor, pid: %d\n", *pid_result);
 }
 
 //Para compilar -> gcc cliente.c -o cliente
