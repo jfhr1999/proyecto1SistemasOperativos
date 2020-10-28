@@ -123,8 +123,7 @@ int main(int argc, char const *argv[])
         } else
 
         if(exe[0]=='a'){
-            /*printf("Holaaa\n");
-            send(sock , exe , strlen(exe) , 0 );*/
+            send(sock , exe , strlen(exe) , 0 );
             printf("Ingrese el minimo valor del rango del burst\n");
             scanf("%d",&burstLower);
             printf("Ingrese el maximo valor del rango del burst\n");
@@ -181,7 +180,8 @@ void* sendToServer(void * arg){
     int priority = *values[2];
 
     //Hago espacio para el int que voy a recibir
-    int *resPid = (int *)malloc(sizeof(int));
+    int resPid = 0;
+
 
     //Si es manual tiene un sleep antes de enviar la info, si es auto sleep es 0
     sleep(sleepNumber);
@@ -190,8 +190,9 @@ void* sendToServer(void * arg){
     //PENDING
 
     //Retorna con un valor temporal para las pruebas, piensen que es el int que recibi
-    *resPid = 2;
-    return resPid;
+    printf("Respuesta de servidor, pid: %d\n", resPid);
+
+    return NULL;
 
 }
 
@@ -217,8 +218,8 @@ void sendThread(char mode, int burst, int priority){
     pthread_create(&newThread, NULL, sendToServer, &values);
 
     //Espera a que termine de correr el thread y recibe el resultado
-    pthread_join(newThread, (void*)&pid_result);
-    printf("Respuesta de servidor, pid: %d\n", *pid_result);
+    pthread_join(newThread, NULL);
+    
 }
 
 
