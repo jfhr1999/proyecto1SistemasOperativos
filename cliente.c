@@ -89,9 +89,9 @@ int main(int argc, char const *argv[])
     
     //variables para leer el archivo:
     FILE *f;
-    int c;
-    unsigned char symb;
-    char * fileToRead;
+    char * line = NULL;
+    size_t len = 0;
+    ssize_t readLineTxt;
 
     //variables para establecer el tipo de ejecucion, manual o automatica
     char *exe;
@@ -139,12 +139,9 @@ int main(int argc, char const *argv[])
 
             
             /*f=fopen(fileToRead,"rt");
-            while((c=fgetc(f))!=EOF){
-                //por aqui van los threads para enviar los datos pero igual
-                //hay que hacer un brete para que ver como mandamos los valores
-                symb= (unsigned char) c;  
-                if(symb >= '0' && symb <='9')
-                    printf("%c",symb);
+            while ((readLineTxt = getline(&line, &len, f)) != -1) {
+                printf("%s\n", line);
+            }
 
                 //tambien iria un read(sock, pId, 1024); para recibir el pid e imprimirlo
             }
