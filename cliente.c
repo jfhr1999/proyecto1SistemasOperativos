@@ -88,7 +88,7 @@ int main(int argc, char const *argv[])
             break;
         } else
 
-        if(exe[0] == 'm'){
+        if(!strcmp(exe, "m")){
             send(sock , exe , strlen(exe) , 0 );
             //printf("Digite el nombre del archivo a leer: \n");//no se si hacerlo de forma constante arriba
             //scanf("%s",fileToRead);
@@ -122,7 +122,7 @@ int main(int argc, char const *argv[])
             
         } else
 
-        if(exe[0]=='a'){
+        if(!strcmp(exe, "a")){
             send(sock , exe , strlen(exe) , 0 );
             printf("Ingrese el minimo valor del rango del burst\n");
             scanf("%d",&burstLower);
@@ -162,8 +162,12 @@ int main(int argc, char const *argv[])
             printf("\n");
             printf("\n");
             
-
+        
+        } else
+        {
+            printf("Comando no reconocido\n");
         }
+        
         //send(sock , msg , strlen(msg) , 0 ); snippet para mandar algo por el socket 
         //valread = read( sock , buffer, 1024); //snipet para recibir algo por el socket
         //printf("Process ID %s\n",buffer );
@@ -179,7 +183,7 @@ void* sendToServer(void * arg){
     int burst = *values[1];
     int priority = *values[2];
 
-    //Hago espacio para el int que voy a recibir
+
     int resPid = 0;
 
 
