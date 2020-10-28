@@ -50,7 +50,7 @@ int main(int argc, char const *argv[])
     ssize_t readLineTxt;
 
     //variables para establecer el tipo de ejecucion, manual o automatica
-    char *exe;
+    char exe[50] = {0};
 
     //variables para el rango de valores del burst
     int burstUpper, burstLower, tasa;
@@ -205,7 +205,7 @@ void sendThread(char mode, int burst, int priority){
     //Nuevo thread
     pthread_t newThread;
     //Para guardar el pid que recibe el thread como resultado
-    int *pid_result;
+    //int *pid_result;
 
     
     //Meto los valores en un array para enviarlos al thread
