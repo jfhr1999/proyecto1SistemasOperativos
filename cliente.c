@@ -10,11 +10,13 @@
 #include <string.h>
 #define PORT 8080 
 
+int sock;
+int valread;
+int burstUpper, burstLower;
 
 //funciones para crear procesos
 int createBurst(int limiteIn, int limiteSup){
-    srand(time(0));
-    int burst = (rand() % (limiteSup - limiteIn + 1)) + limiteIn; //crear un numero aleatorio entre 2 limites
+    int burst = rand() % (limiteSup - limiteIn + 1) + limiteIn; //crear un numero aleatorio entre 2 limites
     return burst;
 }
 
@@ -30,7 +32,7 @@ int createRandSleep(){
 }
 
 void* sendToServer(void * arg);
-void sendThread(char mode, int burst, int priority, int sock, int valread);
+void sendThread(char mode, int burst, int priority);
 
 //Crea un thread, lo envia al server e imprime el pid que recibió como resultado
 
@@ -41,7 +43,9 @@ int main(int argc, char const *argv[])
     //Bandera para ejecutar modo automatico
     bool run_auto = false;
 
-    int sock = 0, valread; //para establecer el socket
+    srand(time(NULL));
+
+    //int sock = 0, valread; //para establecer el socket
     struct sockaddr_in serv_addr; 
     
     //variables para leer el archivo:
@@ -54,7 +58,7 @@ int main(int argc, char const *argv[])
     char exe[50] = {0};
 
     //variables para el rango de valores del burst
-    int burstUpper, burstLower, tasa;
+    int tasa;
 
     
     char buffer[1024] = {0}; 
@@ -139,10 +143,10 @@ int main(int argc, char const *argv[])
             run_auto = true;
             while(run_auto){ //Como hago run_auto = false como usuario ?????????
                 printf("%d", cont);
-                int burst = createBurst(burstLower,burstUpper);
-                int prior = createPriority();
+                int burst = 0;
+                int prior = 0;
                 
-                sendThread('a', burst, prior, sock, valread); //a por modo automatico
+                sendThread('a', burst, prior); //a por modo automatico
                 cont = cont + 1;
                 //Si quiere enviar mas de un thread por segundo, usa la tasa
                 //Si no, envia un thread por minuto
@@ -180,12 +184,10 @@ int main(int argc, char const *argv[])
 
 void* sendToServer(void * arg){
     //Guardo los valores que recibo como parametro
-    int (*values)[5] = (int (*) [5]) arg;
+    int (*values)[3] = (int [3]) arg;
     int sleepNumber = *values[0];
     int burst = *values[1];
     int priority = *values[2];
-    int sock = *values[3];
-    int valread = *values[4];
 
 
     char buffer[1024] = {0};
@@ -195,19 +197,20 @@ void* sendToServer(void * arg){
     sleep(sleepNumber);
 
 
-    char sockTxt[50];
-    char valreadTxt[50];
+    char burstTxt[50];
+    char priorityTxt[50];
 
-    sprintf(sockTxt, "%d", sock);
-    sprintf(valreadTxt, "%d", valread);
+    sprintf(burstTxt, "%d", burst);
+    sprintf(priorityTxt, "%d", priority);
 
-    strcat(sockTxt, ",");
-    strcat(sockTxt, valreadTxt);
+    strcat(burstTxt, ",");
+    strcat(burstTxt, priorityTxt);
 
-    
+    printf("Burst en hilo: %d\n", burst);
+    printf("Priority en hilo: %d\n", priority);
 
     //Enviar a servidor y recibir el numero del pid como respuesta
-    send(sock , sockTxt , strlen(sockTxt) , 0 );
+    send(sock , burstTxt , strlen(burstTxt) , 0 );
     valread = read( sock , buffer, 1024);
 
     //Retorna con un valor temporal para las pruebas, piensen que es el int que recibi
@@ -217,7 +220,7 @@ void* sendToServer(void * arg){
 
 }
 
-void sendThread(char mode, int burst, int priority, int sock, int valread){
+void sendThread(char mode, int burst, int priority){
     
     //Nuevo thread
     pthread_t newThread;
@@ -226,17 +229,22 @@ void sendThread(char mode, int burst, int priority, int sock, int valread){
 
     
     //Meto los valores en un array para enviarlos al thread
-    int values[5];
+    int * values[3];
     //Si es modo manual el sleep es 2, si es auto es 0
     if(mode == 'm'){
         values[0] = 2;
+        values[1] = burst;
+        values[2] = priority;
     } else {
         values[0] = 0;
+        values[1] = createBurst(burstLower,burstUpper);
+        values[2] = createPriority();
     }
-    values[1] = burst;
-    values[2] = priority;
-    values[3] = sock;
-    values[4] = valread;
+
+    printf("Burst: %d\n", values[1]);
+    printf("Priority: %d\n", values[2]);
+
+    int valores = (values[1] * 10) + values[2];
 
     pthread_create(&newThread, NULL, sendToServer, &values);
 

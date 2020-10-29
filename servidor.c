@@ -20,10 +20,10 @@ int main(int argc, char const *argv[])
 
     //para enviar los pId... creo
     int pNumber = 0; 
-    char numStr[50];
+    char numStr[50] = {0};
 
     //para elegir el algoritmo
-    char * alg;
+    char alg[50] = {0};
     int quantum;    
      
        
@@ -89,7 +89,8 @@ int main(int argc, char const *argv[])
         }
         printf("El cliente envio: %s\n",buffer ); 
         sprintf(numStr, "%i", pNumber);
-        send(new_socket , numStr , strlen(numStr) , 0 ); 
+        send(new_socket , numStr , strlen(numStr) , 0 );
+        pNumber = pNumber + 1; 
         
     }
     return 0; 
