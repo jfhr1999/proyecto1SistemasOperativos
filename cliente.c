@@ -14,6 +14,12 @@ int sock;
 int valread;
 int burstUpper, burstLower;
 
+struct values_struct{
+    int sleep;
+    int burst;
+    int priority;
+};
+
 //funciones para crear procesos
 int createBurst(int limiteIn, int limiteSup){
     int burst = rand() % (limiteSup - limiteIn + 1) + limiteIn; //crear un numero aleatorio entre 2 limites
@@ -137,17 +143,14 @@ int main(int argc, char const *argv[])
             printf("Ingrese la tasa de creacion\n"); //no se para que tho
             scanf("%d",&tasa);
 
-            printf("Recibio valores");
+            //printf("Recibio valores");
             //se manda...
-            int cont = 0;
             run_auto = true;
             while(run_auto){ //Como hago run_auto = false como usuario ?????????
-                printf("%d", cont);
                 int burst = 0;
                 int prior = 0;
                 
                 sendThread('a', burst, prior); //a por modo automatico
-                cont = cont + 1;
                 //Si quiere enviar mas de un thread por segundo, usa la tasa
                 //Si no, envia un thread por minuto
                 if(tasa > 0){
@@ -184,30 +187,26 @@ int main(int argc, char const *argv[])
 
 void* sendToServer(void * arg){
     //Guardo los valores que recibo como parametro
-    int (*values)[3] = (int [3]) arg;
-    int sleepNumber = *values[0];
-    int burst = *values[1];
-    int priority = *values[2];
-
+    struct values_struct *values = arg;
 
     char buffer[1024] = {0};
 
 
     //Si es manual tiene un sleep antes de enviar la info, si es auto sleep es 0
-    sleep(sleepNumber);
+    sleep(values -> sleep);
 
 
     char burstTxt[50];
     char priorityTxt[50];
 
-    sprintf(burstTxt, "%d", burst);
-    sprintf(priorityTxt, "%d", priority);
+    sprintf(burstTxt, "%d", values -> burst);
+    sprintf(priorityTxt, "%d", values -> priority);
 
     strcat(burstTxt, ",");
     strcat(burstTxt, priorityTxt);
 
-    printf("Burst en hilo: %d\n", burst);
-    printf("Priority en hilo: %d\n", priority);
+    //printf("Burst en hilo: %d\n", values -> burst);
+    //printf("Priority en hilo: %d\n", values -> priority);
 
     //Enviar a servidor y recibir el numero del pid como respuesta
     send(sock , burstTxt , strlen(burstTxt) , 0 );
@@ -229,24 +228,22 @@ void sendThread(char mode, int burst, int priority){
 
     
     //Meto los valores en un array para enviarlos al thread
-    int * values[3];
+    struct values_struct values;
     //Si es modo manual el sleep es 2, si es auto es 0
     if(mode == 'm'){
-        values[0] = 2;
-        values[1] = burst;
-        values[2] = priority;
+        values.sleep = 2;
+        values.burst = burst;
+        values.priority = priority;
     } else {
-        values[0] = 0;
-        values[1] = createBurst(burstLower,burstUpper);
-        values[2] = createPriority();
+        values.sleep = 0;
+        values.burst = createBurst(burstLower,burstUpper);
+        values.priority = createPriority();
     }
 
-    printf("Burst: %d\n", values[1]);
-    printf("Priority: %d\n", values[2]);
+    //printf("Burst: %d\n", values.burst);
+    //printf("Priority: %d\n", values.priority);
 
-    int valores = (values[1] * 10) + values[2];
-
-    pthread_create(&newThread, NULL, sendToServer, &values);
+    pthread_create(&newThread, NULL, sendToServer, (void *)&values);
 
     //Espera a que termine de correr el thread y recibe el resultado
     pthread_join(newThread, NULL);
