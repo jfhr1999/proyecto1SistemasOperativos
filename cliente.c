@@ -59,6 +59,7 @@ int main(int argc, char const *argv[])
     char * line = NULL;
     size_t len = 0;
     ssize_t readLineTxt;
+    char fileToRead[50] = {0};
 
     //variables para establecer el tipo de ejecucion, manual o automatica
     char exe[50] = {0};
@@ -100,19 +101,39 @@ int main(int argc, char const *argv[])
         } else
 
         if(!strcmp(exe, "m")){
-            send(sock , exe , strlen(exe) , 0 );
-            //printf("Digite el nombre del archivo a leer: \n");//no se si hacerlo de forma constante arriba
-            //scanf("%s",fileToRead);
+            //send(sock , exe , strlen(exe) , 0 );
+            printf("Digite el nombre del archivo a leer: \n");//no se si hacerlo de forma constante arriba
+            scanf("%s",fileToRead);
 
+            char separator[] = ",";
             
-            /*f=fopen(fileToRead,"rt");
+
+            //f=fopen("process.txt", "rt");
+            f=fopen(fileToRead,"rt");
             while ((readLineTxt = getline(&line, &len, f)) != -1) {
-                printf("%s\n", line);
+                printf("Read line: %s\n", line);
+                char* token;
+                int var;
+                int input[2];
+                int i = 0;
+
+                token = strtok(line, separator);
+                while(token != NULL){
+                    sscanf(token, "%d", &var);
+                    input[i++] = var;
+
+                    token = strtok(NULL, separator);
+                }
+
+                sendThread('m', input[0], input[1]);
+                
+
             }
+            fclose(f);
 
                 //tambien iria un read(sock, pId, 1024); para recibir el pid e imprimirlo
-            }
-            fclose(f);*/
+            
+            
 
             /*
             lineas = (array con cada linea del archivo???) o leer cada linea y hacer esto al leerla
