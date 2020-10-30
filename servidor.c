@@ -78,6 +78,7 @@ int main(int argc, char const *argv[])
         printf("Servidor se ha conextado\n");
     }
     printf("EL servidor esta ejecutando y recibio un cliente\n");
+    
     while(1){
         
          

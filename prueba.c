@@ -11,7 +11,7 @@
 #include <netinet/in.h>
 #define PORT 8080 
 
-char algorithm;
+ char algorithm[50] = {0};
 int quantum = 0;
 bool run = true;
 bool insertInProgress = false;
@@ -59,16 +59,26 @@ void freeArray(Array *a) {
 
 void FIFO(Array *a) {
     for (int i = 0; i < a->used; i++) {
-        printf("Proceso %d", a->array[i].pId);
-        printf(" con burst %d", a->array[i].burst);
-        printf(" y prioridad %d", a->array[i].priority);
+        printf("Proceso %d", a->array[0].pId);
+        printf(" con burst %d", a->array[0].burst);
+        printf(" y prioridad %d", a->array[0].priority);
         printf(" entra en ejecucion\n\n");
-        //sleep del thread por a->array[i].burst segundos
-        a->array[i].remaining = 0;
+        //sleep del thread por a->array[0].burst segundos
+        sleep(a->array[0].burst);
+        a->array[0].remaining = 0;
         printf("Proceso terminado:\n");
-        printf("PID: %d\n", a->array[i].pId);
-        printf("Burst: %d\n", a->array[i].burst);
-        printf("Prioridad: %d\n\n", a->array[i].priority);
+        printf("PID: %d\n", a->array[0].pId);
+        printf("Burst: %d\n", a->array[0].burst);
+        printf("Prioridad: %d\n\n", a->array[0].priority);
+
+        struct Process p;
+        for (int j = 0; j < a->used - 1; j++) {
+            p = a->array[j+1];
+            a->array[j] = p;
+        }
+
+        a->used--;
+
     }
 }
 
@@ -86,6 +96,7 @@ void SJF(Array *a) {
         printf(" y prioridad %d", a->array[shortestJobIndex].priority);
         printf(" entra en ejecucion\n\n");
         //sleep del thread por a->array[i].burst segundos
+        sleep(a->array[i].burst);
         a->array[shortestJobIndex].remaining = 0;
         printf("Proceso terminado:\n");
         printf("PID: %d\n", a->array[shortestJobIndex].pId);
@@ -115,6 +126,7 @@ void HPF(Array *a) {
         printf(" y prioridad %d", a->array[topPriorityIndex].priority);
         printf(" entra en ejecucion\n\n");
         //sleep del thread por a->array[i].burst segundos
+        sleep(a->array[i].burst);
         a->array[topPriorityIndex].remaining = 0;
         printf("Proceso terminado:\n");
         printf("PID: %d\n", a->array[topPriorityIndex].pId);
@@ -138,6 +150,7 @@ void RR(Array *a, int quantum) {
             printf(" y prioridad %d", a->array[index].priority);
             printf(" entra en ejecucion\n\n");
             //sleep por a->array[index].remaining segundos
+            sleep(a->array[index].remaining);
             printf("Proceso terminado:\n");
             printf("PID: %d\n", a->array[index].pId);
             printf("Burst: %d\n", a->array[index].burst);
@@ -158,6 +171,7 @@ void RR(Array *a, int quantum) {
             printf(" y prioridad %d", a->array[index].priority);
             printf(" entra en ejecucion\n\n");
             //sleep por quantum segundos
+            sleep(quantum);
             a->array[index].remaining = a->array[index].remaining - quantum;
             index++;
             index = index % a->used; 
@@ -229,14 +243,14 @@ int main(){
     //Elegir algoritmo
     do{
         printf("Ingrese el tipo de algoritmo que se va a utilizar:  FIFO(f), SJF(s), HPF(h), Round Robin(r)\n");
-        scanf("%s", alg);
-        if(!strcmp(alg,"r")){
+        scanf("%s", algorithm);
+        if(!strcmp(algorithm,"r")){
             printf("Ingrese el quantum para el Round Robin\n");
             scanf("%d",&quantum);
             printf("El quantum es de %d\n",quantum);
             valid_algorithm = true;
         } else
-        if(!strcmp(alg, "f") || !strcmp(alg,"s") || !strcmp(alg, "h")){
+        if(!strcmp(algorithm, "f") || !strcmp(algorithm,"s") || !strcmp(algorithm, "h")){
             valid_algorithm = true;
         } else{
             printf("Comando no reconocido. Intente de nuevo. \n");
@@ -339,14 +353,20 @@ int main(){
 void* runCpuScheduler(void *arg){
     while(run){
         if(!insertInProgress){ //Si esta haciendo un insert, try again later
+        //printf("No insert in progress.\n");
             if(readyQueue.used > 0){ //Si esta vacio el queue, try again later
-                if(algorithm == 'f'){ //FIFO
+            //printf("Queue not empty.\n");
+                if(!strcmp(algorithm, "f")){ //FIFO
+                    //printf("FIFO.\n");
                     FIFO(&readyQueue);
-                } else if(algorithm == 's'){ //SJF
+                } else if(!strcmp(algorithm, "s")){ //SJF
+                    //printf("SJF\n");
                     SJF(&readyQueue);
-                } else if(algorithm == 'h'){ //HPF
+                } else if(!strcmp(algorithm, "h")){ //HPF
+                    //printf("HPF.\n");
                     HPF(&readyQueue);
-                } else if(algorithm == 'r'){ //Round Robin
+                } else if(!strcmp(algorithm, "r")){ //Round Robin
+                    //printf("Round Robin.\n");
                     RR(&readyQueue, quantum);
                 }
             }
