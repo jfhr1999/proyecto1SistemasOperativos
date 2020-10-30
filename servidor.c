@@ -58,6 +58,7 @@ int main(int argc, char const *argv[])
         exit(EXIT_FAILURE); 
     } 
 
+    //Elegir algoritmo
     printf("Ingrese el tipo de algoritmo que se va a utilizar:  FIFO(f), SJF(s), HPF(h), Round Robin(r)\n");
     scanf("%s", alg);
     if(!strcmp(alg,"r")){
