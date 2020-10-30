@@ -11,16 +11,19 @@
 #include <netinet/in.h>
 #define PORT 8080 
 
- char algorithm[50] = {0};
+char algorithm[50] = {0};
 int quantum = 0;
 bool run = true;
 bool insertInProgress = false;
+bool zona_critica = false;
 
 struct Process {
     int pId;
     int burst;
     int priority;
     int remaining;
+    int tat; //Turn-around time
+    int wt; //Waiting time
 };
 
 typedef struct {
@@ -30,6 +33,7 @@ typedef struct {
 } Array;
 
 Array readyQueue;
+Array doneQueue;
 
 void initArray(Array *a, size_t initialSize) {
     a->array = malloc(initialSize * sizeof(struct Process));
@@ -37,12 +41,14 @@ void initArray(Array *a, size_t initialSize) {
     a->size = initialSize;
 }
 
-void insertProcess(Array *a, int id, int burst, int priority) {
+void insertProcess(Array *a, int id, int burst, int priority, int tat, int wt) {
     struct Process p;
     p.pId = id;
     p.burst = burst;
     p.priority = priority;
     p.remaining = p.burst;
+    p.tat = tat;
+    p.wt = wt;
     if (a->used == a->size) {
         a->size *= 2;
         a->array = realloc(a->array, a->size * sizeof(struct Process));
@@ -51,6 +57,7 @@ void insertProcess(Array *a, int id, int burst, int priority) {
     printf("Internal insert done. \n");
 }
 
+
 void freeArray(Array *a) {
     free(a->array);
     a->array = NULL;
@@ -58,7 +65,8 @@ void freeArray(Array *a) {
 }
 
 void FIFO(Array *a) {
-    for (int i = 0; i < a->used; i++) {
+    int size = a->used;
+    for (int i = 0; i < size; i++) {
         printf("Proceso %d", a->array[0].pId);
         printf(" con burst %d", a->array[0].burst);
         printf(" y prioridad %d", a->array[0].priority);
@@ -71,12 +79,23 @@ void FIFO(Array *a) {
         printf("Burst: %d\n", a->array[0].burst);
         printf("Prioridad: %d\n\n", a->array[0].priority);
 
+        for (int j = 0; j < a->used; j++) {
+            a->array[j].tat = a->array[j].tat + a->array[0].burst; 
+        }
+
+        a->array[0].wt = a->array[0].tat - a->array[0].burst;
+
+        insertProcess(&doneQueue, a->array[0].pId, a->array[0].burst, a->array[0].priority, a->array[0].tat, a->array[0].wt);
+
+
         struct Process p;
         for (int j = 0; j < a->used - 1; j++) {
             p = a->array[j+1];
             a->array[j] = p;
         }
 
+        printf("\nUsed: %d\n", a->used);
+        printf("i: %d\n", i);
         a->used--;
 
     }
@@ -148,6 +167,7 @@ void RR(Array *a, int quantum) {
             printf("Proceso %d", a->array[index].pId);
             printf(" con burst %d", a->array[index].burst);
             printf(" y prioridad %d", a->array[index].priority);
+            printf(" con remaining %d", a->array[index].remaining);
             printf(" entra en ejecucion\n\n");
             //sleep por a->array[index].remaining segundos
             sleep(a->array[index].remaining);
@@ -155,6 +175,7 @@ void RR(Array *a, int quantum) {
             printf("PID: %d\n", a->array[index].pId);
             printf("Burst: %d\n", a->array[index].burst);
             printf("Prioridad: %d\n\n", a->array[index].priority);
+            zona_critica = true;
             if(index + 1 != a->used){
                 struct Process p;
                 for (int i = index; i < a->used - 1; i++) {
@@ -165,11 +186,14 @@ void RR(Array *a, int quantum) {
                 index = 0; 
             }
             a->used--;
+            zona_critica = false;
         }else{
             printf("Proceso %d", a->array[index].pId);
             printf(" con burst %d", a->array[index].burst);
             printf(" y prioridad %d", a->array[index].priority);
+            printf(" con remaining %d", a->array[index].remaining);
             printf(" entra en ejecucion\n\n");
+            printf(" con quantum %d", quantum);
             //sleep por quantum segundos
             sleep(quantum);
             a->array[index].remaining = a->array[index].remaining - quantum;
@@ -197,8 +221,7 @@ int main(){
     char numStr[50] = {0};
 
     //para elegir el algoritmo
-    char alg[50] = {0};
-    int quantum;    
+    char alg[50] = {0};  
 
 
     //Thread CPU scheduler--------------------------------------
@@ -309,7 +332,8 @@ int main(){
 
         //Job scheduler--------------------------------------------------------
         insertInProgress = true;
-        insertProcess(&readyQueue, pNumber, input[0], input[1]);
+        while(zona_critica){}
+        insertProcess(&readyQueue, pNumber, input[0], input[1], 0, 0);
         printf("Inserted into queue. \n");
         insertInProgress = false;
         //---------------------------------------------------------------------
@@ -384,7 +408,13 @@ void* listenForCommands(void *arg){
         if(!strcmp(command,"fin")){//condicion de parada
             run = false;
         } else if(!strcmp(command, "c")){
-            printf("Esta debe ser la cola \n");
+            printf("-----Cola:-------\n");
+            for (int i = 0; i < readyQueue.used; i++) {
+                printf("Proceso %d\n", readyQueue.array[i].pId);
+                printf("Prioridad: %d\n", readyQueue.array[i].priority);
+                printf("Burst: %d\n", readyQueue.array[i].burst);
+                printf("Burst restante: %d\n\n", readyQueue.array[i].remaining);
+            }
         } else{
             printf("Comando no reconocido \n");
         }
