@@ -57,6 +57,23 @@ void insertProcess(Array *a, int id, int burst, int priority, int tat, int wt) {
     printf("Internal insert done. \n");
 }
 
+void calcularPromedios(Array *a){
+    float promedioTAT = 0;
+    float promedioWT = 0;
+
+    for(int i = 0; i < a->used; i++){
+        promedioTAT += a->array[i].tat;
+        promedioWT += a->array[i].wt;
+    }
+
+    promedioTAT /= a->used;
+    promedioWT /= a->used;
+
+    printf("Promedio TAT: %f\n",promedioTAT);
+    printf("Promedio WT: %f\n", promedioWT);
+
+}
+
 
 void freeArray(Array *a) {
     free(a->array);
@@ -94,8 +111,6 @@ void FIFO(Array *a) {
             a->array[j] = p;
         }
 
-        printf("\nUsed: %d\n", a->used);
-        printf("i: %d\n", i);
         a->used--;
 
     }
@@ -114,13 +129,23 @@ void SJF(Array *a) {
         printf(" con burst %d", a->array[shortestJobIndex].burst);
         printf(" y prioridad %d", a->array[shortestJobIndex].priority);
         printf(" entra en ejecucion\n\n");
-        //sleep del thread por a->array[i].burst segundos
-        sleep(a->array[i].burst);
+        //sleep del thread por a->array[shortestJobIndex].burst segundos
+        sleep(a->array[shortestJobIndex].burst);
         a->array[shortestJobIndex].remaining = 0;
         printf("Proceso terminado:\n");
         printf("PID: %d\n", a->array[shortestJobIndex].pId);
         printf("Burst: %d\n", a->array[shortestJobIndex].burst);
         printf("Prioridad: %d\n\n", a->array[shortestJobIndex].priority);
+        
+        for (int j = 0; j < a->used; j++) {
+            a->array[j].tat = a->array[j].tat + a->array[shortestJobIndex].burst; 
+        }
+
+        a->array[shortestJobIndex].wt = a->array[shortestJobIndex].tat - a->array[shortestJobIndex].burst;
+
+        insertProcess(&doneQueue, a->array[shortestJobIndex].pId, a->array[shortestJobIndex].burst, a->array[shortestJobIndex].priority, a->array[shortestJobIndex].tat, a->array[shortestJobIndex].wt);
+
+
         struct Process p;
         for (int j = shortestJobIndex; j < a->used - 1; j++) {
             p = a->array[j+1];
@@ -144,13 +169,29 @@ void HPF(Array *a) {
         printf(" con burst %d", a->array[topPriorityIndex].burst);
         printf(" y prioridad %d", a->array[topPriorityIndex].priority);
         printf(" entra en ejecucion\n\n");
-        //sleep del thread por a->array[i].burst segundos
-        sleep(a->array[i].burst);
+        //sleep del thread por a->array[topPriorityIndex].burst segundos
+        sleep(a->array[topPriorityIndex].burst);
         a->array[topPriorityIndex].remaining = 0;
         printf("Proceso terminado:\n");
         printf("PID: %d\n", a->array[topPriorityIndex].pId);
         printf("Burst: %d\n", a->array[topPriorityIndex].burst);
         printf("Prioridad: %d\n\n", a->array[topPriorityIndex].priority);
+
+        for (int j = 0; j < a->used; j++) {
+            a->array[j].tat = a->array[j].tat + a->array[topPriorityIndex].burst; 
+        }
+
+        a->array[topPriorityIndex].wt = a->array[topPriorityIndex].tat - a->array[topPriorityIndex].burst;
+
+
+        printf("WT: %d\n",  a->array[topPriorityIndex].wt);
+        printf("TAT: %d\n",  a->array[topPriorityIndex].tat);
+        printf("Burst: %d\n",  a->array[topPriorityIndex].burst);
+
+        insertProcess(&doneQueue, a->array[topPriorityIndex].pId, a->array[topPriorityIndex].burst, a->array[topPriorityIndex].priority, a->array[topPriorityIndex].tat, a->array[topPriorityIndex].wt);
+
+
+
         struct Process p;
         for (int j = topPriorityIndex; j < a->used - 1; j++) {
             p = a->array[j+1];
@@ -171,6 +212,15 @@ void RR(Array *a, int quantum) {
             printf(" entra en ejecucion\n\n");
             //sleep por a->array[index].remaining segundos
             sleep(a->array[index].remaining);
+
+            for (int j = 0; j < a->used; j++) {
+                a->array[j].tat = a->array[j].tat + a->array[index].remaining; 
+            }
+
+            a->array[index].wt = a->array[index].tat - a->array[index].burst;
+
+            insertProcess(&doneQueue, a->array[index].pId, a->array[index].burst, a->array[index].priority, a->array[index].tat, a->array[index].wt);
+
             printf("Proceso terminado:\n");
             printf("PID: %d\n", a->array[index].pId);
             printf("Burst: %d\n", a->array[index].burst);
@@ -193,9 +243,15 @@ void RR(Array *a, int quantum) {
             printf(" y prioridad %d", a->array[index].priority);
             printf(" con remaining %d", a->array[index].remaining);
             printf(" entra en ejecucion\n\n");
-            printf(" con quantum %d", quantum);
             //sleep por quantum segundos
             sleep(quantum);
+            printf("Proceso %d", a->array[index].pId);
+            printf(" sale de ejecucion\n\n");
+
+            for (int j = 0; j < a->used; j++) {
+                a->array[j].tat = a->array[j].tat + quantum; 
+            }
+
             a->array[index].remaining = a->array[index].remaining - quantum;
             index++;
             index = index % a->used; 
@@ -226,6 +282,7 @@ int main(){
 
     //Thread CPU scheduler--------------------------------------
     initArray(&readyQueue, 5);
+    initArray(&doneQueue, 5);
     //Despues de init creo el CPU scheduler
     pthread_t cpuScheduler;
     pthread_create(&cpuScheduler, NULL, runCpuScheduler, NULL); 
@@ -407,6 +464,25 @@ void* listenForCommands(void *arg){
         scanf("%s", command);
         if(!strcmp(command,"fin")){//condicion de parada
             run = false;
+            
+            printf("TABLA DE TIEMPOS------------------------------------------\n");
+
+            for (int i = 0; i < doneQueue.used; i++) {
+                printf("Proceso %d\n", doneQueue.array[i].pId);
+                printf("TAT: %d\n", doneQueue.array[i].tat);
+                printf("WT: %d\n\n", doneQueue.array[i].wt);
+            }
+
+            printf("PROMEDIO DE TIEMPOS------------------------------------------\n");
+            
+            calcularPromedios(&doneQueue);
+
+            printf("CANTIDAD PROCESOS FINALIZADOS---------------------------------\n");
+
+            printf("%d\n", doneQueue.used);
+
+            printf("---------------------------------------------------------------\n");
+
         } else if(!strcmp(command, "c")){
             printf("-----Cola:-------\n");
             for (int i = 0; i < readyQueue.used; i++) {
@@ -414,6 +490,7 @@ void* listenForCommands(void *arg){
                 printf("Prioridad: %d\n", readyQueue.array[i].priority);
                 printf("Burst: %d\n", readyQueue.array[i].burst);
                 printf("Burst restante: %d\n\n", readyQueue.array[i].remaining);
+                printf("------------------------------------------------------\n");
             }
         } else{
             printf("Comando no reconocido \n");
