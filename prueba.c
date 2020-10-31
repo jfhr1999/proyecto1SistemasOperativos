@@ -115,6 +115,8 @@ void FIFO(Array *a) {
             }
 
             a->used--;
+        } else{
+            freeArray(&readyQueue);
         }
 
     }
@@ -158,7 +160,10 @@ void SJF(Array *a) {
             }
 
             a->used--;
+        } else {
+            freeArray(&readyQueue);
         }
+        
     }
 }
 
@@ -205,6 +210,8 @@ void HPF(Array *a) {
                 a->array[j] = p;
             }
             a->used--;
+        } else{
+            freeArray(&readyQueue);
         }
     }
 }
@@ -265,6 +272,8 @@ void RR(Array *a, int quantum) {
                 index++;
                 index = index % a->used; 
             }
+        } else{
+            freeArray(&readyQueue);
         }
     }
 }
